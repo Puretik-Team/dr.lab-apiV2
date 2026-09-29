@@ -395,15 +395,15 @@ router.post("/devices/:deviceId/revoke", adminAuth, async (req, res) => {
     // Also clear the legacy User.device pin if it matches this machine —
     // that's what actually blocks re-login ("already logged in from
     // another device") on non-sync labs, since that check reads
-    // User.device rather than the Device table.
-    if (device.userId) {
-      const user = await prisma.user.findUnique({ where: { id: device.userId } });
-      if (user?.device === device.machineId) {
-        await prisma.user.update({
-          where: { id: device.userId },
-          data: { device: null, platform: null },
-        });
-      }
+    // User.device rather than the Device table. Device.userId isn't
+    // populated by the sync upsert, so match on the machine id (User.device
+    // is @unique) instead of relying on device.userId.
+    const pinnedUser = await prisma.user.findUnique({ where: { device: device.machineId } });
+    if (pinnedUser) {
+      await prisma.user.update({
+        where: { id: pinnedUser.id },
+        data: { device: null, platform: null },
+      });
     }
 
     res.status(200).json({ success: true });
