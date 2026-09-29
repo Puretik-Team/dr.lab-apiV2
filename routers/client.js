@@ -460,6 +460,7 @@ router.get("/users/:id", adminAuth, async (req, res) => {
         role: true,
         phone: true,
         username: true,
+        device: true,
         platform: true,
         isVerified: true,
         lastActive: true,
