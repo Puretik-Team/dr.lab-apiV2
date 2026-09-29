@@ -519,6 +519,16 @@ router.post("/users/:userId/revoke-device", adminAuth, async (req, res) => {
       data: { revokedAt: new Date() },
     });
 
+    // Also clear the legacy User.device pin — this is what actually blocks
+    // re-login ("already logged in from another device") on non-sync labs,
+    // since that check reads User.device rather than the Device table.
+    if (user.device) {
+      await prisma.user.update({
+        where: { id: userId },
+        data: { device: null, platform: null },
+      });
+    }
+
     res.status(200).json({ success: true });
   } catch (error) {
     console.error("Error revoking user devices:", error);
