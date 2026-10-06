@@ -769,4 +769,33 @@ router.post("/whatsapp-message", clientAuth, async (req, res) => {
   res.status(200).json({ message: result?.message, success: true });
 });
 
+// Report-template catalog the desktop app lists in its design picker. Only
+// published designs; configJson is the app's own template format and is
+// re-normalized by the app on download.
+router.get("/templates", clientAuth, async (req, res) => {
+  try {
+    const templates = await prisma.template.findMany({
+      where: { isPublished: true },
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        category: true,
+        language: true,
+        pageSize: true,
+        orientation: true,
+        schemaVersion: true,
+        version: true,
+        configJson: true,
+        updatedAt: true,
+      },
+      orderBy: { updatedAt: "desc" },
+    });
+    res.json(templates);
+  } catch (error) {
+    console.error("Error fetching template catalog:", error);
+    res.status(500).json({ error: "Could not fetch templates" });
+  }
+});
+
 module.exports = router;

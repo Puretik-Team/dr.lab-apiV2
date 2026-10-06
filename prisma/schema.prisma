@@ -125,6 +125,25 @@ model Invoice {
   Plan      Plan        @relation(fields: [planId], references: [id])
 }
 
+// Report templates published from the admin dashboard. The whole design is
+// the desktop app's template JSON (see dr.lab.beta src/templates/schema.js),
+// stored opaquely in configJson; the scalar columns are for listing only.
+model Template {
+  id            Int      @id @default(autoincrement())
+  name          String
+  description   String   @default("")
+  category      String   @default("General")
+  language      String   @default("en")
+  pageSize      String   @default("A4")
+  orientation   String   @default("portrait")
+  schemaVersion Int      @default(1)
+  version       Int      @default(1)
+  isPublished   Boolean  @default(false)
+  configJson    Json
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
 model Whatsapp {
   id            Int      @id @default(autoincrement())
   createdAt     DateTime @default(now())
