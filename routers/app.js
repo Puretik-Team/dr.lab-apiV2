@@ -786,10 +786,13 @@ router.get("/templates", clientAuth, async (req, res) => {
         orientation: true,
         schemaVersion: true,
         version: true,
+        isFree: true,
+        legacyKey: true,
+        sortOrder: true,
         configJson: true,
         updatedAt: true,
       },
-      orderBy: { updatedAt: "desc" },
+      orderBy: [{ sortOrder: "asc" }, { id: "asc" }],
     });
     res.json(templates);
   } catch (error) {

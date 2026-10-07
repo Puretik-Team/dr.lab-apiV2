@@ -139,6 +139,15 @@ model Template {
   schemaVersion Int      @default(1)
   version       Int      @default(1)
   isPublished   Boolean  @default(false)
+  // Free templates are open to every lab; the rest need a paid or
+  // subscription plan (enforced in the app's picker).
+  isFree        Boolean  @default(false)
+  // Set on the designs that used to be built into the app ("modernPurple",
+  // ...) so labs that saved one can be moved to this entry and receive its
+  // updates. Null for everything created afterwards.
+  legacyKey     String?  @unique
+  // Position in the app's picker, ascending (free templates are listed first).
+  sortOrder     Int      @default(0)
   configJson    Json
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt

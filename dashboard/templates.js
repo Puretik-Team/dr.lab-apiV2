@@ -17,6 +17,9 @@ const listSelect = {
   schemaVersion: true,
   version: true,
   isPublished: true,
+  isFree: true,
+  legacyKey: true,
+  sortOrder: true,
   createdAt: true,
   updatedAt: true,
 };
@@ -34,6 +37,12 @@ const fromBody = (body = {}) => {
   if (!name) return { error: "Template name is required" };
   return {
     data: {
+      // Only touched when sent, so saving the JSON alone never flips them.
+      ...(body.isFree === undefined ? {} : { isFree: !!body.isFree }),
+      ...(Number.isInteger(body.sortOrder) ? { sortOrder: body.sortOrder } : {}),
+      // Only the built-in designs carry one (see scripts/seed-builtin-templates.js);
+      // importing their file keeps it so labs using the old design get moved.
+      ...(typeof body.legacyKey === "string" && body.legacyKey.trim() ? { legacyKey: body.legacyKey.trim() } : {}),
       name,
       description: String(body.description ?? config.description ?? ""),
       category: String(body.category ?? config.category ?? "General"),
@@ -50,7 +59,7 @@ router.get("/", adminAuth, async (req, res) => {
   try {
     const templates = await prisma.template.findMany({
       select: listSelect,
-      orderBy: { updatedAt: "desc" },
+      orderBy: [{ sortOrder: "asc" }, { id: "asc" }],
     });
     res.json(templates);
   } catch (error) {
@@ -79,6 +88,7 @@ router.post("/", adminAuth, async (req, res) => {
     const template = await prisma.template.create({ data });
     res.json(template);
   } catch (err) {
+    if (err.code === "P2002") return res.status(400).json({ error: "A template with this key already exists" });
     console.error("Error creating template:", err);
     res.status(500).json({ error: "Could not create template" });
   }
@@ -95,6 +105,7 @@ router.put("/:id", adminAuth, async (req, res) => {
     res.json(template);
   } catch (err) {
     if (err.code === "P2025") return res.status(404).json({ error: "Template not found" });
+    if (err.code === "P2002") return res.status(400).json({ error: "A template with this key already exists" });
     console.error("Error updating template:", err);
     res.status(500).json({ error: "Could not update template" });
   }
@@ -111,6 +122,21 @@ router.patch("/:id/publish", adminAuth, async (req, res) => {
   } catch (err) {
     if (err.code === "P2025") return res.status(404).json({ error: "Template not found" });
     console.error("Error publishing template:", err);
+    res.status(500).json({ error: "Could not update template" });
+  }
+});
+
+router.patch("/:id/free", adminAuth, async (req, res) => {
+  try {
+    const template = await prisma.template.update({
+      where: { id: parseInt(req.params.id) },
+      data: { isFree: !!req.body.isFree },
+      select: listSelect,
+    });
+    res.json(template);
+  } catch (err) {
+    if (err.code === "P2025") return res.status(404).json({ error: "Template not found" });
+    console.error("Error updating template tier:", err);
     res.status(500).json({ error: "Could not update template" });
   }
 });
